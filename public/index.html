@@ -1,1 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Manga Downloader Replit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0b0b0b;color:white;text-align:center;}
+#dropzone{padding:15px;margin:10px auto;border:2px dashed #444;border-radius:10px;color:#888;cursor:pointer;width:90%;max-width:500px;}
+#dropzone.hover{border-color:#ff2e2e;color:#ff2e2e;}
+#urlInput{width:90%;max-width:500px;padding:12px;margin:10px auto;display:block;border-radius:10px;border:none;}
+#loader{display:none;text-align:center;margin:10px;}
+#preview{width:90%;max-width:500px;margin:10px auto;}
+#preview img{width:100%;margin-bottom:10px;border-radius:6px;display:block;}
+#actions{margin:10px;}
+button{padding:12px 20px;margin:5px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;width:45%;max-width:200px;}
+.zip{background:#ff2e2e;color:white;}
+.pdf{background:#333;color:white;}
+#history{text-align:left;margin:15px auto;width:90%;max-width:500px;max-height:150px;overflow-y:auto;background:#111;padding:10px;border-radius:10px;}
+#history button{display:block;width:100%;margin:5px 0;background:#222;color:white;text-align:left;padding:8px;}
+#history button:hover{background:#ff2e2e;color:white;}
+</style>
+</head>
+<body>
 
+<div id="dropzone">📂 Drag & Drop Link Komik</div>
+<input type="text" id="urlInput" placeholder="Atau paste link komik">
+<div id="loader">⏳ Processing...</div>
+<div id="preview"></div>
+<div id="actions">
+  <button class="zip" onclick="downloadZip()">Download ZIP</button>
+  <button class="pdf" onclick="downloadPDF()">Download PDF</button>
+</div>
+<h3 style="text-align:center;">🕘 History Download</h3>
+<div id="history"></div>
+
+<script>
+let images=[];let historyList=[];
+
+function lazyLoad(img){const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){img.src=img.dataset.src;observer.unobserve(img);}});},{rootMargin:"100px"});observer.observe(img);}
+
+async function loadPreview(url){
+  document.getElementById("loader").style.display="block";
+  const res = await fetch(`/proxy?url=${encodeURIComponent(url)}`);
+  const json = await res.json();
+  images=json.data;
+  const previewDiv=document.getElementById("preview");previewDiv.innerHTML="";
+  images.forEach(imgUrl=>{const imgEl=document.createElement("img");imgEl.dataset.src=imgUrl;previewDiv.appendChild(imgEl);lazyLoad(imgEl);});
+  addHistory(url);
+  document.getElementById("loader").style.display="none";
+}
+
+function addHistory(url){if(historyList.includes(url)) return;historyList.unshift(url);const histDiv=document.getElementById("history");histDiv.innerHTML="";historyList.forEach(h=>histDiv.innerHTML+=`<button onclick="selectHistory('${h}')">${h}</button>`);}
+function selectHistory(url){document.getElementById("urlInput").value=url;loadPreview(url);}
+function downloadZip(){if(!document.getElementById("urlInput").value)return alert("Masukin link dulu!");window.open(`/download/zip?url=${encodeURIComponent(document.getElementById("urlInput").value)}`,"_blank");}
+function downloadPDF(){if(!document.getElementById("urlInput").value)return alert("Masukin link dulu!");window.open(`/download/pdf?url=${encodeURIComponent(document.getElementById("urlInput").value)}`,"_blank");}
+
+document.getElementById("urlInput").addEventListener("change",(e)=>loadPreview(e.target.value));
+const dropzone=document.getElementById("dropzone");
+dropzone.addEventListener("dragover",e=>{e.preventDefault();dropzone.classList.add("hover");});
+dropzone.addEventListener("dragleave",e=>{dropzone.classList.remove("hover");});
+dropzone.addEventListener("drop",e=>{e.preventDefault();dropzone.classList.remove("hover");const url=e.dataTransfer.getData("text");if(url){document.getElementById("urlInput").value=url;loadPreview(url);}});
+</script>
+
+</body>
+</html>
